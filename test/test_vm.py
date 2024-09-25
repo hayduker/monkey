@@ -195,6 +195,63 @@ class TestCompiler(unittest.TestCase):
         ]
 
         self.run_vm_tests(tests)
+    
+    def test_function_calls_with_bindings(self):
+        tests = [
+            VmTestCase(input_string='''
+                        let one = fn() {let one = 1; one };
+                        one();
+                       ''',
+                       expected=1),
+            VmTestCase(input_string='''
+                        let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+                        oneAndTwo();
+                       ''',
+                       expected=3),
+            VmTestCase(input_string='''
+                        let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+                        let threeAndFour = fn() { let three = 3; let four = 4; three + four; };
+                        oneAndTwo() + threeAndFour();
+                       ''',
+                       expected=10),
+            VmTestCase(input_string='''
+                        let firstFoobar = fn() { let foobar = 50; foobar; };
+                        let secondFoobar = fn() { let foobar = 100; foobar; };
+                        firstFoobar() + secondFoobar();
+                       ''',
+                       expected=150),
+            VmTestCase(input_string='''
+                        let globalSeed = 50;
+                        let minusOne = fn() {
+                        let num = 1;
+                        globalSeed - num;
+                        }
+                        let minusTwo = fn() {
+                        let num = 2;
+                        globalSeed - num;
+                        }
+                        minusOne() + minusTwo();
+                       ''',
+                       expected=97),
+        ]
+
+        self.run_vm_tests(tests)
+    
+    def test_first_class_functions(self):
+        tests = [
+            VmTestCase(
+                input_string='''
+                    let returnsOneReturner = fn() {
+                        let returnsOne = fn() { 1; };
+                        returnsOne;
+                    };
+                    returnsOneReturner()();
+                ''',
+                expected=1,
+            )
+        ]
+
+        self.run_vm_tests(tests)
 
 if __name__ == '__main__':
     unittest.main()

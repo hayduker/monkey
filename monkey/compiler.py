@@ -1,7 +1,7 @@
 from monkey import myast as ast
 from monkey import code
 from monkey.object import *
-from monkey.symbol_table import SymbolTable
+from monkey.symbol_table import SymbolTable, GlobalScope, LocalScope
 
 from typing import List, Dict, TypeAlias
 from dataclasses import dataclass, field
@@ -37,9 +37,13 @@ class Compiler:
         self.constants = []
         self.symbol_table = SymbolTable()
 
-        self.scopes = []
-        self.scope_index = -1
-        self.enter_scope()
+        scope = CompilationScope(
+            instructions=code.Instructions(),
+            last_instruction=EmittedInstruction(),
+            previous_instruction=EmittedInstruction()
+        )
+        self.scopes = [scope]
+        self.scope_index = 0
 
     @property
     def current_scope(self) -> CompilationScope:
@@ -53,11 +57,13 @@ class Compiler:
         )
         self.scopes.append(scope)
         self.scope_index += 1
+        self.symbol_table = SymbolTable(self.symbol_table)
 
     def leave_scope(self) -> code.Instructions:
         instructions = self.current_scope.instructions
         self.scopes = self.scopes[:-1] # TODO: Change to "del self.scopes[-1]"?
         self.scope_index -= 1
+        self.symbol_table = self.symbol_table.outer
         return instructions
 
     def compile(self, node: ast.Node) -> CompilerError | None:
@@ -171,14 +177,20 @@ class Compiler:
                 return err
             
             symbol = self.symbol_table.define(node.name.value)
-            self.emit(code.Opcode.OpSetGlobal, symbol.index)
+            if symbol.scope == GlobalScope:
+                self.emit(code.Opcode.OpSetGlobal, symbol.index)
+            else:
+                self.emit(code.Opcode.OpSetLocal, symbol.index)
         
         elif type(node) is ast.Identifier:
             symbol = self.symbol_table.resolve(node.value)
             if symbol is None:
                 return CompilerError(f'Undefined variable: {node.value}')
     
-            self.emit(code.Opcode.OpGetGlobal, symbol.index)
+            if symbol.scope == GlobalScope:
+                self.emit(code.Opcode.OpGetGlobal, symbol.index)
+            else:
+                self.emit(code.Opcode.OpGetLocal, symbol.index)
 
         elif type(node) is ast.ArrayLiteral:
             for elem in node.elements:
@@ -222,9 +234,10 @@ class Compiler:
             if not self.last_instruction_is(code.Opcode.OpReturnValue):
                 self.emit(code.Opcode.OpReturn)
 
+            num_locals = self.symbol_table.num_definitions
             instructions = self.leave_scope()
 
-            compiled_fn = CompiledFunction(instructions)
+            compiled_fn = CompiledFunction(instructions, num_locals)
             self.emit(code.Opcode.OpConstant, self.add_constant(compiled_fn))
 
         elif type(node) is ast.ReturnStatement:

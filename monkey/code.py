@@ -29,6 +29,8 @@ class Opcode(Enum):
     OpCall          = b'\x16'
     OpReturnValue   = b'\x17'
     OpReturn        = b'\x18'
+    OpSetLocal      = b'\x19'
+    OpGetLocal      = b'\x1A'
 
 
 @dataclass
@@ -62,6 +64,8 @@ definitions = {
     Opcode.OpCall:          Definition(name='OpCall',          operand_widths=[]),
     Opcode.OpReturnValue:   Definition(name='OpReturnValue',   operand_widths=[]),
     Opcode.OpReturn:        Definition(name='OpReturn',        operand_widths=[]),
+    Opcode.OpSetLocal:      Definition(name='OpSetLocal',      operand_widths=[1]),
+    Opcode.OpGetLocal:      Definition(name='OpGetLocal',      operand_widths=[1]),
 }
 
 
@@ -81,7 +85,9 @@ def make(op: Opcode, *operands: int) -> bytes:
     instruction = op.value
     for i, o in enumerate(operands):
         width = defn.operand_widths[i]
-        if width == 2:
+        if width == 1:
+            instruction += o.to_bytes(1, byteorder='big')
+        elif width == 2:
             instruction += o.to_bytes(2, byteorder='big')
 
     return instruction
@@ -113,6 +119,10 @@ class Instructions(bytearray):
         return string
 
 
+def read_uint8(ins: Instructions) -> int:
+    return int.from_bytes(ins)
+
+
 def read_uint16(ins: Instructions) -> int:
     return int.from_bytes(ins, byteorder='big')
 
@@ -122,7 +132,9 @@ def read_operands(defn: Definition, ins: Instructions) -> Tuple[List[int], int]:
     offset = 0
 
     for i, width in enumerate(defn.operand_widths):
-        if width == 2:
+        if width == 1:
+            operands.append(read_uint8(ins[offset:offset + width]))
+        elif width == 2:
             operands.append(read_uint16(ins[offset:offset + width]))
 
         offset += width

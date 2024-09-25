@@ -29,7 +29,7 @@ class VirtualMachine:
 
         self.frames = [None] * MAX_FRAMES
         main_fn = CompiledFunction(instructions=bytecode.instructions)
-        main_frame = Frame(fn=main_fn)
+        main_frame = Frame(fn=main_fn, base_pointer=0)
         self.frames[0] = main_frame
         self.frames_index = 1
 
@@ -148,14 +148,46 @@ class VirtualMachine:
                 if type(fn) is not CompiledFunction:
                     return VmError('calling non-function')
                 
-                self.push_frame(Frame(fn))
+                frame = Frame(fn, base_pointer=self.sp)
+                self.push_frame(frame)
+                # "Allocate" room on stack for the local variables of the function
+                # before where the function will use the stack for actually doing
+                # its work
+                self.sp = frame.base_pointer + fn.num_locals
             
             elif op == Opcode.OpReturnValue:
-                return_value = self.pop() # Get the return value
-                self.pop_frame() # Return to the caller's instructions
-                self.pop() # Pop the CompiledFunction of the stack
+                return_value = self.pop()
+
+                frame = self.pop_frame()
+                self.sp = frame.base_pointer - 1
 
                 err = self.push(return_value)
+                if err is not None:
+                    return err
+
+            elif op == Opcode.OpReturn:
+                frame = self.pop_frame()
+                self.sp = frame.base_pointer - 1
+
+                err = self.push(NULL)
+                if err is not None:
+                    return err
+            
+            elif op == Opcode.OpSetLocal:
+                local_index = code.read_uint8(ins[ip+1:ip+2])
+                self.current_frame.ip += 1
+
+                frame = self.current_frame
+
+                self.stack[frame.base_pointer + local_index] = self.pop()
+            
+            elif op == Opcode.OpGetLocal:
+                local_index = code.read_uint8(ins[ip+1:ip+2])
+                self.current_frame.ip += 1
+
+                frame = self.current_frame
+
+                err = self.push(self.stack[frame.base_pointer + local_index])
                 if err is not None:
                     return err
 

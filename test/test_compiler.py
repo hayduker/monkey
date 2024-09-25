@@ -392,6 +392,7 @@ class TestCompiler(unittest.TestCase):
     def test_compiler_scopes(self):
         compiler = Compiler()
         self.assertEqual(compiler.scope_index, 0)
+        global_table = compiler.symbol_table
         compiler.emit(code.Opcode.OpMul)
 
         compiler.enter_scope()
@@ -400,9 +401,12 @@ class TestCompiler(unittest.TestCase):
         self.assertEqual(len(compiler.current_scope.instructions), 1)
         last = compiler.current_scope.last_instruction
         self.assertEqual(last.opcode, code.Opcode.OpSub)
+        self.assertEqual(compiler.symbol_table.outer, global_table)
 
         compiler.leave_scope()
         self.assertEqual(compiler.scope_index, 0)
+        self.assertEqual(compiler.symbol_table, global_table)
+        self.assertIsNone(compiler.symbol_table.outer, global_table)
         compiler.emit(code.Opcode.OpAdd)
         self.assertEqual(len(compiler.current_scope.instructions), 2)
         last = compiler.current_scope.last_instruction
@@ -499,6 +503,73 @@ class TestCompiler(unittest.TestCase):
                                 code.make(code.Opcode.OpSetGlobal, 0),
                                 code.make(code.Opcode.OpGetGlobal, 0),
                                 code.make(code.Opcode.OpCall),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+        ]
+
+        self.run_compiler_tests(tests)
+
+    def test_let_statement_scopes(self):
+        tests = [
+            CompilerTestCase(input_string='''
+                                let num = 55;
+                                fn() { num }
+                                ''',
+                             expected_constants=[
+                                55,
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpGetGlobal, 0),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ])
+                             ],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpSetGlobal, 0),
+                                code.make(code.Opcode.OpConstant, 1),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+            CompilerTestCase(input_string='''
+                                fn() {
+                                    let num = 55;
+                                    num
+                                }
+                                ''',
+                             expected_constants=[
+                                55,
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpConstant, 0),
+                                    code.make(code.Opcode.OpSetLocal, 0),
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ])
+                             ],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpConstant, 1),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+            CompilerTestCase(input_string='''
+                                fn() {
+                                    let a = 55;
+                                    let b = 77;
+                                    a + b
+                                }
+                                ''',
+                             expected_constants=[
+                                55,
+                                77,
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpConstant, 0),
+                                    code.make(code.Opcode.OpSetLocal, 0),
+                                    code.make(code.Opcode.OpConstant, 1),
+                                    code.make(code.Opcode.OpSetLocal, 1),
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpGetLocal, 1),
+                                    code.make(code.Opcode.OpAdd),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ])
+                             ],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpConstant, 2),
                                 code.make(code.Opcode.OpPop),
                              ]),
         ]

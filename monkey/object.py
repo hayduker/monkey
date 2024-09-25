@@ -101,6 +101,7 @@ class FunctionObject(Object):
 @dataclass
 class CompiledFunction(Object):
     instructions: code.Instructions
+    num_locals: int = 0
 
     def objtype(self):
         return ObjectType.COMPILED_FUNCTION_OBJ
