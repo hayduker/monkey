@@ -61,7 +61,7 @@ definitions = {
     Opcode.OpArray:         Definition(name='OpArray',         operand_widths=[2]),
     Opcode.OpHash:          Definition(name='OpHash',          operand_widths=[2]),
     Opcode.OpIndex:         Definition(name='OpIndex',         operand_widths=[]),
-    Opcode.OpCall:          Definition(name='OpCall',          operand_widths=[]),
+    Opcode.OpCall:          Definition(name='OpCall',          operand_widths=[1]),
     Opcode.OpReturnValue:   Definition(name='OpReturnValue',   operand_widths=[]),
     Opcode.OpReturn:        Definition(name='OpReturn',        operand_widths=[]),
     Opcode.OpSetLocal:      Definition(name='OpSetLocal',      operand_widths=[1]),

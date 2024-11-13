@@ -487,7 +487,7 @@ class TestCompiler(unittest.TestCase):
                              ],
                              expected_instructions=[
                                 code.make(code.Opcode.OpConstant, 1),
-                                code.make(code.Opcode.OpCall),
+                                code.make(code.Opcode.OpCall, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
             CompilerTestCase(input_string='let noArg = fn() { 24 }; noArg();',
@@ -502,7 +502,47 @@ class TestCompiler(unittest.TestCase):
                                 code.make(code.Opcode.OpConstant, 1),
                                 code.make(code.Opcode.OpSetGlobal, 0),
                                 code.make(code.Opcode.OpGetGlobal, 0),
-                                code.make(code.Opcode.OpCall),
+                                code.make(code.Opcode.OpCall, 0),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+            CompilerTestCase(input_string='let oneArg = fn(a) { a }; oneArg(24);',
+                             expected_constants=[
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                                24,
+                             ],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpSetGlobal, 0),
+                                code.make(code.Opcode.OpGetGlobal, 0),
+                                code.make(code.Opcode.OpConstant, 1),
+                                code.make(code.Opcode.OpCall, 1),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+            CompilerTestCase(input_string='let manyArgs = fn(a, b, c) { a; b; c }; manyArgs(24, 25, 26);',
+                             expected_constants=[
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpPop),
+                                    code.make(code.Opcode.OpGetLocal, 1),
+                                    code.make(code.Opcode.OpPop),
+                                    code.make(code.Opcode.OpGetLocal, 2),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                                24,
+                                25,
+                                26
+                             ],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpSetGlobal, 0),
+                                code.make(code.Opcode.OpGetGlobal, 0),
+                                code.make(code.Opcode.OpConstant, 1),
+                                code.make(code.Opcode.OpConstant, 2),
+                                code.make(code.Opcode.OpConstant, 3),
+                                code.make(code.Opcode.OpCall, 3),
                                 code.make(code.Opcode.OpPop),
                              ]),
         ]

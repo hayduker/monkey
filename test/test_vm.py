@@ -223,12 +223,12 @@ class TestCompiler(unittest.TestCase):
             VmTestCase(input_string='''
                         let globalSeed = 50;
                         let minusOne = fn() {
-                        let num = 1;
-                        globalSeed - num;
+                            let num = 1;
+                            globalSeed - num;
                         }
                         let minusTwo = fn() {
-                        let num = 2;
-                        globalSeed - num;
+                            let num = 2;
+                            globalSeed - num;
                         }
                         minusOne() + minusTwo();
                        ''',
@@ -236,7 +236,90 @@ class TestCompiler(unittest.TestCase):
         ]
 
         self.run_vm_tests(tests)
-    
+
+    def test_function_calls_with_arguments_and_bindings(self):
+        tests = [
+            VmTestCase(input_string='''
+                        let identity = fn(a) { a; };
+                        identity(4);
+                       ''',
+                       expected=4),
+            VmTestCase(input_string='''
+                        let sum = fn(a, b) { a + b; };
+                        sum(1, 2);
+                       ''',
+                       expected=3),
+            VmTestCase(input_string='''
+                        let sum = fn(a, b) {
+                            let c = a + b;
+                            c;
+                        };
+                        sum(1, 2);
+                       ''',
+                       expected=3),
+            VmTestCase(input_string='''
+                        let sum = fn(a, b) {
+                            let c = a + b;
+                            c;
+                        };
+                        sum(1, 2) + sum(3, 4);
+                       ''',
+                       expected=10),
+            VmTestCase(input_string='''
+                        let sum = fn(a, b) {
+                            let c = a + b;
+                            c;
+                        };
+                        let outer = fn() {
+                            sum(1, 2) + sum(3, 4);
+                        }
+                        outer();
+                       ''',
+                       expected=10),
+            VmTestCase(input_string='''
+                        let globalNum = 10;
+                       
+                        let sum = fn(a, b) {
+                            let c = a + b;
+                            c + globalNum;
+                        };
+                       
+                        let outer = fn() {
+                            sum(1, 2) + sum(3, 4) + globalNum;
+                        }
+                       
+                        outer() + globalNum;
+                       ''',
+                       expected=50),
+        ]
+
+        self.run_vm_tests(tests)
+
+    def test_function_calls_with_wrong_arguments(self):
+        tests = [
+            VmTestCase(input_string='''fn() { 1; }(1);''',
+                       expected='wrong number of arguments: want=0, got=1'),
+            VmTestCase(input_string='''fn(a) { a; }();''',
+                       expected='wrong number of arguments: want=1, got=0'),
+            VmTestCase(input_string='''fn(a, b) { a + b; }(1);''',
+                       expected='wrong number of arguments: want=2, got=1'),
+        ]
+
+        for test in tests:
+            program = self.parse(test.input_string)
+            compiler = Compiler()
+            err = compiler.compile(program)
+            if err is not None:
+                self.fail(f'compiler error: {err}')
+            
+            vm = VirtualMachine(compiler.bytecode())
+            err = vm.run()
+            if err is None:
+                self.fail('expected VM error but resulted in none.')
+            
+            if str(err) != test.expected:
+                self.fail(f'wrong VM error: want={test.expected}, got={err}')
+
     def test_first_class_functions(self):
         tests = [
             VmTestCase(

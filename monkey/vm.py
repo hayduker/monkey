@@ -18,7 +18,6 @@ NULL = NullObject()
 class VmError(Exception):
     pass
 
-
 class VirtualMachine:
     def __init__(self, bytecode: Bytecode):
         self.constants = bytecode.constants
@@ -144,16 +143,12 @@ class VirtualMachine:
                     return err
 
             elif op == Opcode.OpCall:
-                fn = self.stack[self.sp-1]
-                if type(fn) is not CompiledFunction:
-                    return VmError('calling non-function')
-                
-                frame = Frame(fn, base_pointer=self.sp)
-                self.push_frame(frame)
-                # "Allocate" room on stack for the local variables of the function
-                # before where the function will use the stack for actually doing
-                # its work
-                self.sp = frame.base_pointer + fn.num_locals
+                num_args = int(ins[ip+1])
+                self.current_frame.ip += 1
+
+                err = self.call_function(num_args)
+                if err is not None:
+                    return err
             
             elif op == Opcode.OpReturnValue:
                 return_value = self.pop()
@@ -313,7 +308,23 @@ class VirtualMachine:
         
         return self.push(IntegerObject(-operand.value))
 
-
+    def call_function(self, num_args: int) -> VmError | None:
+        fn = self.stack[self.sp-1-num_args] # Function is below all the args on the stack
+        if type(fn) is not CompiledFunction:
+            return VmError('calling non-function')
+        
+        if num_args != fn.num_parameters:
+            return VmError(f'wrong number of arguments: want={fn.num_parameters}, got={num_args}')
+        
+        # self.sp points at the slot above the args, but base_pointer needs to point
+        # to the first arg so that it can appropriately clean them up when the call
+        # is finished
+        frame = Frame(fn, base_pointer=self.sp-num_args)
+        self.push_frame(frame)
+        # "Allocate" room on stack for the local variables of the function
+        # before where the function will use the stack for actually doing
+        # its work
+        self.sp = frame.base_pointer + fn.num_locals
 
     def build_array(self, start: int, end: int) -> ArrayObject:
         elements = [None] * (end - start)

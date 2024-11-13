@@ -225,6 +225,9 @@ class Compiler:
         elif type(node) is ast.FunctionLiteral:
             self.enter_scope()
 
+            for param in node.parameters:
+                self.symbol_table.define(param.value)
+
             if (err := self.compile(node.body)) is not None:
                 return err
             
@@ -237,7 +240,7 @@ class Compiler:
             num_locals = self.symbol_table.num_definitions
             instructions = self.leave_scope()
 
-            compiled_fn = CompiledFunction(instructions, num_locals)
+            compiled_fn = CompiledFunction(instructions, num_locals, len(node.parameters))
             self.emit(code.Opcode.OpConstant, self.add_constant(compiled_fn))
 
         elif type(node) is ast.ReturnStatement:
@@ -249,8 +252,12 @@ class Compiler:
         elif type(node) is ast.CallExpression:
             if (err := self.compile(node.function)) is not None:
                 return err
+        
+            for arg in node.arguments:
+                if (err := self.compile(arg)) is not None:
+                    return err
             
-            self.emit(code.Opcode.OpCall)
+            self.emit(code.Opcode.OpCall, len(node.arguments))
 
     def find_or_add_binding(self, name: str) -> int:
         if name in self.bindings:
