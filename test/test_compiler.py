@@ -616,5 +616,40 @@ class TestCompiler(unittest.TestCase):
 
         self.run_compiler_tests(tests)
 
+    def test_builtins(self):
+        tests = [
+            CompilerTestCase(input_string='''
+                                len([]);
+                                push([], 1);
+                             ''',
+                             expected_constants=[1],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpGetBuiltin, 0),
+                                code.make(code.Opcode.OpArray, 0),
+                                code.make(code.Opcode.OpCall, 1),
+                                code.make(code.Opcode.OpPop),
+                                code.make(code.Opcode.OpGetBuiltin, 5),
+                                code.make(code.Opcode.OpArray, 0),
+                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpCall, 2),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+            CompilerTestCase(input_string='''fn() { len([]) }''',
+                             expected_constants=[
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpGetBuiltin, 0),
+                                    code.make(code.Opcode.OpArray, 0),
+                                    code.make(code.Opcode.OpCall, 1),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ])
+                             ],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+        ]
+
+        self.run_compiler_tests(tests)
+
 if __name__ == '__main__':
     unittest.main()

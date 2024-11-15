@@ -2,7 +2,7 @@ import unittest
 from dataclasses import dataclass
 from typing import List
 
-from monkey.symbol_table import Symbol, SymbolTable, GlobalScope, LocalScope
+from monkey.symbol_table import Symbol, SymbolTable, GlobalScope, LocalScope, BuiltinScope
 
 class TestSymbolTable(unittest.TestCase):
     def test_define(self):
@@ -115,6 +115,31 @@ class TestSymbolTable(unittest.TestCase):
                 result = test.table.resolve(sym.name)
                 self.assertIsNotNone(result, f'name {sym.name} not resolvable')
                 self.assertEqual(result, sym, f'expected {sym.name} to resolve to {sym} but got {result}')
+
+    def test_define_resolve_builtin(self):
+        global_table = SymbolTable()
+        first_local_table = SymbolTable(outer=global_table)
+        second_local_table = SymbolTable(outer=first_local_table)
+
+        expected = [
+            Symbol(name='a', scope=BuiltinScope, index=0),
+            Symbol(name='c', scope=BuiltinScope, index=1),
+            Symbol(name='e', scope=BuiltinScope, index=2),
+            Symbol(name='f', scope=BuiltinScope, index=3),
+        ]
+
+        for i, sym in enumerate(expected):
+            global_table.define_builtin(i, sym.name)
+        
+        for table in [global_table, first_local_table, second_local_table]:
+            for sym in expected:
+                result = table.resolve(sym.name)
+
+                if result is None:
+                    self.fail(f'name {sym.name} not resolvable')
+                
+                if result != sym:
+                    self.fail(f'expected {sym.name} to resolve to {sym}, got {result}')
 
 
 if __name__ == '__main__':

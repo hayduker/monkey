@@ -1,4 +1,9 @@
+from collections import namedtuple
 from monkey.object import *
+
+# TODO: I'm not sure these need to return python's None... The whole "bring your own NULL"
+# thing doesn't seem necessary at first blush... both the evaluator and VM need a NullObject,
+# so why not just use one static copy everywhere?
 
 def _monkey_len(args):
     if len(args) != 1:
@@ -24,7 +29,7 @@ def _monkey_first(args):
     if len(arg.elements) > 0:
         return arg.elements[0]
     
-    return NULL
+    return None
 
 
 def _monkey_last(args):
@@ -39,7 +44,7 @@ def _monkey_last(args):
     if length > 0:
         return arg.elements[length-1]
     
-    return NULL
+    return None
 
 
 def _monkey_rest(args):
@@ -55,7 +60,7 @@ def _monkey_rest(args):
         new_elements = arg.elements[1:]
         return ArrayObject(elements=new_elements)
     
-    return NULL
+    return None
 
 
 def _monkey_push(args):
@@ -75,18 +80,27 @@ def _monkey_push(args):
 def _monkey_puts(args):
     string = '\n'.join([a.inspect() for a in args])
     print(string)
-    return NULL
+    return None
 
 
-builtins = {
-    'len':   BuiltinObject(fn=_monkey_len),
-    'first': BuiltinObject(fn=_monkey_first),
-    'last':  BuiltinObject(fn=_monkey_last),
-    'rest':  BuiltinObject(fn=_monkey_rest),
-    'push':  BuiltinObject(fn=_monkey_push),
-    'puts':  BuiltinObject(fn=_monkey_puts),
-}
 
+NamedBuiltin = namedtuple('NamedBuiltin', ['name', 'builtin'])
+
+builtins = [
+    NamedBuiltin('len',   BuiltinObject(fn=_monkey_len)),
+    NamedBuiltin('puts',  BuiltinObject(fn=_monkey_puts)),
+    NamedBuiltin('first', BuiltinObject(fn=_monkey_first)),
+    NamedBuiltin('last',  BuiltinObject(fn=_monkey_last)),
+    NamedBuiltin('rest',  BuiltinObject(fn=_monkey_rest)),
+    NamedBuiltin('push',  BuiltinObject(fn=_monkey_push)),
+]
+
+def get_builtin_by_name(name):
+    for nb in builtins:
+        if nb.name == name:
+            return nb.builtin
+    
+    return None
 
 
 __all__ = ['builtins']

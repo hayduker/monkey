@@ -7,23 +7,10 @@ from monkey.evaluator import Evaluator
 from monkey.compiler import Compiler, Bytecode
 from monkey.vm import VirtualMachine, GLOBALS_SIZE
 from monkey.symbol_table import SymbolTable
+from monkey.builtins import builtins
 
-MONKEY_FACE ='''
-           __,__
-  .--.  .-"     "-.  .--.
- / .. \/  .-. .-.  \/ .. \\
-| |  '|  /   Y   \ |'   | |
-| \   \  \ 0 | 0 / /    / |
- \ '- ,\.-"""""""-./, -' /
-  ''-' /_   ^ ^   _\ '-''
-      |  \._   _./  |
-      \   \ '~' /   /
-       '._ '-=-' _.'
-          '-----'
-'''
 
 def print_parse_errors(errors):
-    print(MONKEY_FACE)
     print('Whoops! We ran into some monkey business here!')
     print(' parser errors:')
     for msg in errors:
@@ -37,6 +24,8 @@ def start():
     constants = []
     global_bindings = [None] * GLOBALS_SIZE
     symbol_table = SymbolTable()
+    for i, b in enumerate(builtins):
+        symbol_table.define_builtin(i, b.name)
 
     while True:
         text = input(PROMPT)

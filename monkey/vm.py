@@ -2,6 +2,7 @@ from monkey.code import Opcode
 from monkey.compiler import Bytecode
 from monkey.object import *
 from monkey.frame import Frame
+from monkey.builtins import builtins
 
 from typing import List
 
@@ -97,6 +98,7 @@ class VirtualMachine:
                 err = self.push(NULL)
                 if err is not None:
                     return err
+        
             
             elif op == Opcode.OpSetGlobal:
                 global_index = int.from_bytes(ins[ip+1:ip+3])
@@ -146,7 +148,7 @@ class VirtualMachine:
                 num_args = int(ins[ip+1])
                 self.current_frame.ip += 1
 
-                err = self.call_function(num_args)
+                err = self.execute_function(num_args)
                 if err is not None:
                     return err
             
@@ -183,6 +185,16 @@ class VirtualMachine:
                 frame = self.current_frame
 
                 err = self.push(self.stack[frame.base_pointer + local_index])
+                if err is not None:
+                    return err
+            
+            elif op == Opcode.OpGetBuiltin:
+                builtin_index = code.read_uint8(ins[ip+1:ip+2])
+                self.current_frame.ip += 1
+
+                definition = builtins[builtin_index]
+
+                err = self.push(definition.builtin)
                 if err is not None:
                     return err
 
@@ -307,12 +319,17 @@ class VirtualMachine:
             return VmError(f'unsupported type for negation: {operand.type()}')
         
         return self.push(IntegerObject(-operand.value))
+    
+    def execute_function(self, num_args: int) -> VmError | None:
+        callee = self.stack[self.sp-1-num_args] # Function is below all the args on the stack
+        if type(callee) == CompiledFunction:
+            return self.call_function(callee, num_args)
+        elif type(callee) == BuiltinObject:
+            return self.call_builtin(callee, num_args)
+        else:
+            return VmError('calling non-function and non-builtin')
 
-    def call_function(self, num_args: int) -> VmError | None:
-        fn = self.stack[self.sp-1-num_args] # Function is below all the args on the stack
-        if type(fn) is not CompiledFunction:
-            return VmError('calling non-function')
-        
+    def call_function(self, fn: CompiledFunction, num_args: int) -> VmError | None:      
         if num_args != fn.num_parameters:
             return VmError(f'wrong number of arguments: want={fn.num_parameters}, got={num_args}')
         
@@ -325,6 +342,19 @@ class VirtualMachine:
         # before where the function will use the stack for actually doing
         # its work
         self.sp = frame.base_pointer + fn.num_locals
+    
+    def call_builtin(self, builtin: BuiltinObject, num_args: int) -> VmError | None:
+        args = self.stack[self.sp-num_args:self.sp]
+
+        result = builtin.fn(args)
+        self.sp = self.sp - num_args - 1
+
+        if result is not None:
+            self.push(result)
+        else:
+            self.push(NULL)
+        
+        return None
 
     def build_array(self, start: int, end: int) -> ArrayObject:
         elements = [None] * (end - start)

@@ -1,13 +1,12 @@
 import monkey.myast as ast
 import monkey.object as qobj
 from monkey.object import *
-from monkey.builtins import builtins
+from monkey.builtins import get_builtin_by_name
 from monkey.tokens import TokenType, Token
 
 from typing import Hashable
 
 class Evaluator:
-
     def evaluate(self, node, env: Environment):
         match type(node):
             # Statements
@@ -200,11 +199,9 @@ class Evaluator:
         if value is not None:
             return value
 
-        builtin = builtins.get(node.value, None)
-        if builtin is not None:
-            return builtin
+        builtin = get_builtin_by_name(node.value)
+        return builtin if builtin is not None else new_error(f'identifier not found: {node.value}')
 
-        return new_error(f'identifier not found: {node.value}')
 
     #######################
     # Function evaluation #
@@ -220,7 +217,8 @@ class Evaluator:
             return self.unwrap_return_value(evaluated)
 
         elif type(function) == BuiltinObject:
-            return function.fn(args)
+            result = function.fn(args)
+            return result if result is not None else qobj.NULL
         
         return new_error(f'not a function: {function.objtype()}')
 
@@ -274,7 +272,7 @@ class Evaluator:
         
         value = hush.pairs.get(key, None)
         if value is None:
-            return NULL
+            return qobj.NULL
         
         return value
 
@@ -282,49 +280,49 @@ class Evaluator:
     # Macro evaluation #
     ####################
 
-    def quote(self, node: ast.Node, env: Environment) -> Object:
-        node = self.eval_unquote_calls(node, env)
-        return QuoteObject(node=node)
+    # def quote(self, node: ast.Node, env: Environment) -> Object:
+    #     node = self.eval_unquote_calls(node, env)
+    #     return QuoteObject(node=node)
     
-    def eval_unquote_calls(self, quoted: ast.Node, env: Environment) -> ast.Node:
-        def unquoter(node):
-            if not self.is_unquote_call(node):
-                return node
+    # def eval_unquote_calls(self, quoted: ast.Node, env: Environment) -> ast.Node:
+    #     def unquoter(node):
+    #         if not self.is_unquote_call(node):
+    #             return node
         
-            if type(node) is not ast.CallExpression:
-                return node
+    #         if type(node) is not ast.CallExpression:
+    #             return node
             
-            if len(node.arguments) != 1:
-                return node
+    #         if len(node.arguments) != 1:
+    #             return node
             
-            unquoted = self.evaluate(node.arguments[0], env)
-            return self.convert_object_to_ast_node(unquoted)
+    #         unquoted = self.evaluate(node.arguments[0], env)
+    #         return self.convert_object_to_ast_node(unquoted)
         
-        return ast.modify(quoted, unquoter)
+    #     return ast.modify(quoted, unquoter)
     
-    def is_unquote_call(self, node: ast.Node) -> bool:
-        if type(node) is not ast.CallExpression:
-            return False
+    # def is_unquote_call(self, node: ast.Node) -> bool:
+    #     if type(node) is not ast.CallExpression:
+    #         return False
         
-        return node.function.token_literal() == 'unquote'
+    #     return node.function.token_literal() == 'unquote'
 
-    def convert_object_to_ast_node(self, obj: Object) -> ast.Node:
-        if type(obj) is IntegerObject:
-            t = Token(tok_type=TokenType.INT,
-                      tok_literal=str(obj.value))
-            return ast.IntegerLiteral(token=t, value=obj.value)
-        elif type(obj) is BooleanObject:
-            if obj.value:
-                tok_type=TokenType.TRUE
-                tok_literal='true'
-            else:
-                tok_type=TokenType.FALSE
-                tok_literal='false'
-            return ast.Boolean(token=Token(tok_type, tok_literal), value=tok_literal)
-        elif type(obj) is QuoteObject:
-            return obj.node
-        else:
-            return None
+    # def convert_object_to_ast_node(self, obj: Object) -> ast.Node:
+    #     if type(obj) is IntegerObject:
+    #         t = Token(tok_type=TokenType.INT,
+    #                   tok_literal=str(obj.value))
+    #         return ast.IntegerLiteral(token=t, value=obj.value)
+    #     elif type(obj) is BooleanObject:
+    #         if obj.value:
+    #             tok_type=TokenType.TRUE
+    #             tok_literal='true'
+    #         else:
+    #             tok_type=TokenType.FALSE
+    #             tok_literal='false'
+    #         return ast.Boolean(token=Token(tok_type, tok_literal), value=tok_literal)
+    #     elif type(obj) is QuoteObject:
+    #         return obj.node
+    #     else:
+    #         return None
 
     ##################
     # Helper methods #

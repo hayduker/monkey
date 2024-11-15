@@ -3,8 +3,9 @@ from dataclasses import dataclass
 
 SymbolScope: TypeAlias = str
 
-GlobalScope: SymbolScope = 'GLOBAL'
-LocalScope:  SymbolScope = 'LOCAL'
+GlobalScope:  SymbolScope = 'GLOBAL'
+LocalScope:   SymbolScope = 'LOCAL'
+BuiltinScope: SymbolScope = 'BUILTIN' 
 
 
 @dataclass
@@ -25,6 +26,11 @@ class SymbolTable:
         symbol = Symbol(name, scope, self.num_definitions)
         self.store[name] = symbol
         self.num_definitions += 1
+        return symbol
+
+    def define_builtin(self, index: int, name: str) -> Symbol:
+        symbol = Symbol(name, BuiltinScope, index)
+        self.store[name] = symbol
         return symbol
     
     def resolve(self, name: str) -> Symbol | None:

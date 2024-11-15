@@ -31,6 +31,7 @@ class Opcode(Enum):
     OpReturn        = b'\x18'
     OpSetLocal      = b'\x19'
     OpGetLocal      = b'\x1A'
+    OpGetBuiltin    = b'\x1B'
 
 
 @dataclass
@@ -66,6 +67,7 @@ definitions = {
     Opcode.OpReturn:        Definition(name='OpReturn',        operand_widths=[]),
     Opcode.OpSetLocal:      Definition(name='OpSetLocal',      operand_widths=[1]),
     Opcode.OpGetLocal:      Definition(name='OpGetLocal',      operand_widths=[1]),
+    Opcode.OpGetBuiltin:    Definition(name='OpGetBuiltin',    operand_widths=[1]),
 }
 
 

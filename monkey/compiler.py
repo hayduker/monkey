@@ -1,10 +1,10 @@
 from monkey import myast as ast
 from monkey import code
+from monkey import builtins
 from monkey.object import *
-from monkey.symbol_table import SymbolTable, GlobalScope, LocalScope
+from monkey.symbol_table import Symbol, SymbolTable, GlobalScope, LocalScope, BuiltinScope
 
-from typing import List, Dict, TypeAlias
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # TODO: Make current_instructions a property
 
@@ -36,6 +36,9 @@ class Compiler:
     def __init__(self):
         self.constants = []
         self.symbol_table = SymbolTable()
+
+        for i, b in enumerate(builtins.builtins):
+            self.symbol_table.define_builtin(i, b.name)
 
         scope = CompilationScope(
             instructions=code.Instructions(),
@@ -187,10 +190,7 @@ class Compiler:
             if symbol is None:
                 return CompilerError(f'Undefined variable: {node.value}')
     
-            if symbol.scope == GlobalScope:
-                self.emit(code.Opcode.OpGetGlobal, symbol.index)
-            else:
-                self.emit(code.Opcode.OpGetLocal, symbol.index)
+            self.load_symbol(symbol)
 
         elif type(node) is ast.ArrayLiteral:
             for elem in node.elements:
@@ -258,6 +258,14 @@ class Compiler:
                     return err
             
             self.emit(code.Opcode.OpCall, len(node.arguments))
+
+    def load_symbol(self, sym: Symbol) -> None:
+        if sym.scope == GlobalScope:
+            self.emit(code.Opcode.OpGetGlobal, sym.index)
+        elif sym.scope == LocalScope:
+            self.emit(code.Opcode.OpGetLocal, sym.index)
+        elif sym.scope == BuiltinScope:
+            self.emit(code.Opcode.OpGetBuiltin, sym.index)
 
     def find_or_add_binding(self, name: str) -> int:
         if name in self.bindings:

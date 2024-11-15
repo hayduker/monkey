@@ -50,6 +50,9 @@ class TestCompiler(unittest.TestCase):
                 key = IntegerObject(key)
                 self.assertIn(key, actual.pairs)
                 self.check_expected_object(value, actual.pairs[key])
+        elif type(expected) == ErrorObject:
+            if expected.message != actual.message:
+                self.fail(f'wrong error message. expected={expected.message}, got={actual.message}')
     
     def run_vm_tests(self, tests: List[VmTestCase]) -> None:
         for test in tests:
@@ -332,6 +335,45 @@ class TestCompiler(unittest.TestCase):
                 ''',
                 expected=1,
             )
+        ]
+
+        self.run_vm_tests(tests)
+    
+    def test_builtin_functions(self):
+        tests = [
+            VmTestCase(input_string='''len("")''', expected=0),
+            VmTestCase(input_string='''len("four")''', expected=4),
+            VmTestCase(input_string='''len("hello world")''', expected=11),
+            VmTestCase(
+                input_string='''len(1)''',
+                expected=ErrorObject('argument to "len" not supported, got ObjectType.INTEGER_OBJ')
+            ),
+            VmTestCase(
+                input_string='''len("one", "two")''',
+                expected=ErrorObject("wrong number of arguments. got=2, want=1")
+            ),
+            VmTestCase(input_string='''len([1, 2, 3])''', expected=3),
+            VmTestCase(input_string='''len([])''', expected=0),
+            VmTestCase(input_string='''puts("hello", "world")''', expected=NULL),
+            VmTestCase(input_string='''first([1, 2, 3])''', expected=1),
+            VmTestCase(input_string='''first([])''', expected=NULL),
+            VmTestCase(
+                input_string='''first(1)''',
+                expected=ErrorObject('argument to "first" must be ARRAY, got ObjectType.INTEGER_OBJ')
+            ),
+            VmTestCase(input_string='''last([1, 2, 3])''', expected=3),
+            VmTestCase(input_string='''last([])''', expected=NULL),
+            VmTestCase(
+                input_string='''last(1)''',
+                expected=ErrorObject('argument to "last" must be ARRAY, got ObjectType.INTEGER_OBJ')
+            ),
+            VmTestCase(input_string='''rest([1, 2, 3])''', expected=[2, 3]),
+            VmTestCase(input_string='''rest([])''', expected=NULL),
+            VmTestCase(input_string='''push([], 1)''', expected=[1]),
+            VmTestCase(
+                input_string='''push(1, 1)''',
+                expected=ErrorObject('argument to "push" must be ARRAY, got ObjectType.INTEGER_OBJ')
+            ),
         ]
 
         self.run_vm_tests(tests)
