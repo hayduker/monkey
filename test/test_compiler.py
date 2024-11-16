@@ -428,7 +428,7 @@ class TestCompiler(unittest.TestCase):
                                 ])
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 2),
+                                code.make(code.Opcode.OpClosure, 2, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
             CompilerTestCase(input_string='fn() { 5 + 10 }',
@@ -443,7 +443,7 @@ class TestCompiler(unittest.TestCase):
                                 ])
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 2),
+                                code.make(code.Opcode.OpClosure, 2, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
             CompilerTestCase(input_string='fn() { 1; 2 }',
@@ -458,7 +458,7 @@ class TestCompiler(unittest.TestCase):
                                 ])
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 2),
+                                code.make(code.Opcode.OpClosure, 2, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
             CompilerTestCase(input_string='fn() { }',
@@ -468,7 +468,7 @@ class TestCompiler(unittest.TestCase):
                                 ])
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpClosure, 0, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
         ]
@@ -486,7 +486,7 @@ class TestCompiler(unittest.TestCase):
                                 ])
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 1),
+                                code.make(code.Opcode.OpClosure, 1, 0),
                                 code.make(code.Opcode.OpCall, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
@@ -499,7 +499,7 @@ class TestCompiler(unittest.TestCase):
                                 ])
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 1),
+                                code.make(code.Opcode.OpClosure, 1, 0),
                                 code.make(code.Opcode.OpSetGlobal, 0),
                                 code.make(code.Opcode.OpGetGlobal, 0),
                                 code.make(code.Opcode.OpCall, 0),
@@ -514,7 +514,7 @@ class TestCompiler(unittest.TestCase):
                                 24,
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpClosure, 0, 0),
                                 code.make(code.Opcode.OpSetGlobal, 0),
                                 code.make(code.Opcode.OpGetGlobal, 0),
                                 code.make(code.Opcode.OpConstant, 1),
@@ -536,7 +536,7 @@ class TestCompiler(unittest.TestCase):
                                 26
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpClosure, 0, 0),
                                 code.make(code.Opcode.OpSetGlobal, 0),
                                 code.make(code.Opcode.OpGetGlobal, 0),
                                 code.make(code.Opcode.OpConstant, 1),
@@ -565,7 +565,7 @@ class TestCompiler(unittest.TestCase):
                              expected_instructions=[
                                 code.make(code.Opcode.OpConstant, 0),
                                 code.make(code.Opcode.OpSetGlobal, 0),
-                                code.make(code.Opcode.OpConstant, 1),
+                                code.make(code.Opcode.OpClosure, 1, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
             CompilerTestCase(input_string='''
@@ -584,7 +584,7 @@ class TestCompiler(unittest.TestCase):
                                 ])
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 1),
+                                code.make(code.Opcode.OpClosure, 1, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
             CompilerTestCase(input_string='''
@@ -609,7 +609,7 @@ class TestCompiler(unittest.TestCase):
                                 ])
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 2),
+                                code.make(code.Opcode.OpClosure, 2, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
         ]
@@ -644,7 +644,7 @@ class TestCompiler(unittest.TestCase):
                                 ])
                              ],
                              expected_instructions=[
-                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpClosure, 0, 0),
                                 code.make(code.Opcode.OpPop),
                              ]),
         ]

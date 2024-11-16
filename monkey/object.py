@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from abc import abstractmethod
-from typing import Any, Callable
+from typing import Any, Callable, List
 
 from monkey import myast as ast
 from monkey import code
@@ -13,6 +13,7 @@ class ObjectType(Enum):
     RETURN_VALUE_OBJ      = 'RETURN_VALUE'
     FUNCTION_OBJ          = 'FUNCTION'
     COMPILED_FUNCTION_OBJ = 'COMPILED_FUNCTION'
+    CLOSURE_OBJ           = 'CLOSURE'
     ARRAY_OBJ             = 'ARRAY'
     HASH_OBJ              = 'HASH'
     BUILTIN_OBJ           = 'BUILTIN'
@@ -46,6 +47,7 @@ class IntegerObject(Object):
     def __hash__(self):
         return hash(self.value)
 
+
 @dataclass
 class StringObject(Object):
     value: str
@@ -72,6 +74,7 @@ class BooleanObject(Object):
 
     def __hash__(self):
         return hash(self.value)
+
 
 @dataclass
 class ReturnValue(Object):
@@ -112,6 +115,18 @@ class CompiledFunction(Object):
 
 
 @dataclass
+class Closure(Object):
+    fn: CompiledFunction
+    free: List[Object] = field(default_factory=list) 
+
+    def objtype(self):
+        return ObjectType.CLOSURE_OBJ
+
+    def inspect(self):
+        return f'Closure[{id(self.fn)}, {len(self.free)}]'
+
+
+@dataclass
 class ArrayObject(Object):
     # We use a python tuple because monkey arrays are immutable
     # and can hold multiple data types at once
@@ -124,6 +139,7 @@ class ArrayObject(Object):
         elements = ', '.join([str(e.inspect()) for e in self.elements])
         return f'[{elements}]' 
 
+
 @dataclass
 class HashObject(Object):
     pairs: dict[Object, Object]
@@ -134,6 +150,7 @@ class HashObject(Object):
     def inspect(self):
         pairs = ', '.join([f'{k.inspect()}:{v.inspect()}' for k, v in self.pairs.items()])
         return '{' + pairs + '}'
+
 
 @dataclass
 class BuiltinObject(Object):

@@ -14,9 +14,10 @@ class TestBytecode(unittest.TestCase):
             expected: bytes
         
         tests = [
-            Test(code.Opcode.OpConstant, [65534], code.Opcode.OpConstant.value + b'\xff\xfe'),
-            Test(code.Opcode.OpAdd,      [],      code.Opcode.OpAdd.value),
-            Test(code.Opcode.OpGetLocal, [255],   code.Opcode.OpGetLocal.value + b'\xff'),
+            Test(code.Opcode.OpConstant, [65534],      code.Opcode.OpConstant.value + b'\xff\xfe'),
+            Test(code.Opcode.OpAdd,      [],           code.Opcode.OpAdd.value),
+            Test(code.Opcode.OpGetLocal, [255],        code.Opcode.OpGetLocal.value + b'\xff'),
+            Test(code.Opcode.OpClosure,  [65534, 255], code.Opcode.OpClosure.value + b'\xff\xfe' + b'\xff')
         ]
 
         for test in tests:
@@ -34,8 +35,9 @@ class TestBytecode(unittest.TestCase):
             bytes_read: List[int]
         
         tests = [
-            Test(code.Opcode.OpConstant, [65535], 2),
-            Test(code.Opcode.OpGetLocal, [255],   1),
+            Test(code.Opcode.OpConstant, [65535],      2),
+            Test(code.Opcode.OpGetLocal, [255],        1),
+            Test(code.Opcode.OpClosure,  [65535, 255], 3)
         ]
 
         for test in tests:
@@ -54,9 +56,10 @@ class TestBytecode(unittest.TestCase):
             code.make(code.Opcode.OpGetLocal, 1),
             code.make(code.Opcode.OpConstant, 2),
             code.make(code.Opcode.OpConstant, 65535),
+            code.make(code.Opcode.OpClosure, 65535, 255),
         ]
 
-        expected = '0000 OpAdd\n0001 OpGetLocal 1\n0003 OpConstant 2\n0006 OpConstant 65535\n'
+        expected = '0000 OpAdd\n0001 OpGetLocal 1\n0003 OpConstant 2\n0006 OpConstant 65535\n0009 OpClosure 65535 255\n'
 
         concatted = code.Instructions(b''.join(instructions))
         self.assertEqual(str(concatted), expected)

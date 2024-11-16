@@ -29,7 +29,8 @@ class VirtualMachine:
 
         self.frames = [None] * MAX_FRAMES
         main_fn = CompiledFunction(instructions=bytecode.instructions)
-        main_frame = Frame(fn=main_fn, base_pointer=0)
+        main_closure = Closure(fn=main_fn)
+        main_frame = Frame(cl=main_closure, base_pointer=0)
         self.frames[0] = main_frame
         self.frames_index = 1
 
@@ -148,7 +149,7 @@ class VirtualMachine:
                 num_args = int(ins[ip+1])
                 self.current_frame.ip += 1
 
-                err = self.execute_function(num_args)
+                err = self.execute_call(num_args)
                 if err is not None:
                     return err
             
@@ -197,6 +198,15 @@ class VirtualMachine:
                 err = self.push(definition.builtin)
                 if err is not None:
                     return err
+            
+            elif op == Opcode.OpClosure:
+                const_index = code.read_uint16(ins[ip+1:ip+3])
+                _ = code.read_uint8([ins[ip+3]]) # TODO: Use this value when implementing free variables
+                self.current_frame.ip += 3
+
+                err = self.push_closure(const_index)
+                if err is not None:
+                    return err
 
     @property
     def current_frame(self) -> Frame:
@@ -209,6 +219,14 @@ class VirtualMachine:
     def pop_frame(self) -> Frame:
         self.frames_index -= 1
         return self.frames[self.frames_index]
+
+    def push_closure(self, const_index: int) -> VmError | None:
+        function = self.constants[const_index]
+        if type(function) is not CompiledFunction:
+            return VmError(f'not a function: {function}')
+
+        closure = Closure(fn=function)
+        return self.push(closure)
 
     def execute_index_expression(self, left: Object, index: Object) -> VmError | None:
         if type(left) is ArrayObject and type(index) is IntegerObject:
@@ -320,28 +338,28 @@ class VirtualMachine:
         
         return self.push(IntegerObject(-operand.value))
     
-    def execute_function(self, num_args: int) -> VmError | None:
-        callee = self.stack[self.sp-1-num_args] # Function is below all the args on the stack
-        if type(callee) == CompiledFunction:
-            return self.call_function(callee, num_args)
+    def execute_call(self, num_args: int) -> VmError | None:
+        callee = self.stack[self.sp-1-num_args] # Closure/builtin is below all the args on the stack
+        if type(callee) == Closure:
+            return self.call_closure(callee, num_args)
         elif type(callee) == BuiltinObject:
             return self.call_builtin(callee, num_args)
         else:
-            return VmError('calling non-function and non-builtin')
+            return VmError('calling non-closure and non-builtin')
 
-    def call_function(self, fn: CompiledFunction, num_args: int) -> VmError | None:      
-        if num_args != fn.num_parameters:
-            return VmError(f'wrong number of arguments: want={fn.num_parameters}, got={num_args}')
+    def call_closure(self, cl: Closure, num_args: int) -> VmError | None:      
+        if num_args != cl.fn.num_parameters:
+            return VmError(f'wrong number of arguments: want={cl.fn.num_parameters}, got={num_args}')
         
         # self.sp points at the slot above the args, but base_pointer needs to point
         # to the first arg so that it can appropriately clean them up when the call
         # is finished
-        frame = Frame(fn, base_pointer=self.sp-num_args)
+        frame = Frame(cl, base_pointer=self.sp-num_args)
         self.push_frame(frame)
         # "Allocate" room on stack for the local variables of the function
         # before where the function will use the stack for actually doing
         # its work
-        self.sp = frame.base_pointer + fn.num_locals
+        self.sp = frame.base_pointer + cl.fn.num_locals
     
     def call_builtin(self, builtin: BuiltinObject, num_args: int) -> VmError | None:
         args = self.stack[self.sp-num_args:self.sp]

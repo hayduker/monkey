@@ -32,6 +32,7 @@ class Opcode(Enum):
     OpSetLocal      = b'\x19'
     OpGetLocal      = b'\x1A'
     OpGetBuiltin    = b'\x1B'
+    OpClosure       = b'\x1C'
 
 
 @dataclass
@@ -68,6 +69,7 @@ definitions = {
     Opcode.OpSetLocal:      Definition(name='OpSetLocal',      operand_widths=[1]),
     Opcode.OpGetLocal:      Definition(name='OpGetLocal',      operand_widths=[1]),
     Opcode.OpGetBuiltin:    Definition(name='OpGetBuiltin',    operand_widths=[1]),
+    Opcode.OpClosure:       Definition(name='OpClosure',       operand_widths=[2, 1]),
 }
 
 
@@ -106,6 +108,9 @@ class Instructions(bytearray):
         
         if operand_count == 1:
             return f'{defn.name} {operands[0]}'
+
+        if operand_count == 2:
+            return f'{defn.name} {operands[0]} {operands[1]}'
         
         return f'ERROR: unhandled operand_count for {defn.name}'
 

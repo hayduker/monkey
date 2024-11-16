@@ -241,7 +241,8 @@ class Compiler:
             instructions = self.leave_scope()
 
             compiled_fn = CompiledFunction(instructions, num_locals, len(node.parameters))
-            self.emit(code.Opcode.OpConstant, self.add_constant(compiled_fn))
+            fn_index = self.add_constant(compiled_fn)
+            self.emit(code.Opcode.OpClosure, fn_index, 0) # TODO: Will replace 0 with num free variables
 
         elif type(node) is ast.ReturnStatement:
             if (err := self.compile(node.return_value)) is not None:

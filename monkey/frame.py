@@ -1,14 +1,12 @@
-from monkey import code
 from monkey.object import *
 
 
 class Frame:
-    def __init__(self, fn: CompiledFunction, base_pointer: int):
-        self.fn = fn
+    def __init__(self, cl: Closure, base_pointer: int):
+        self.cl = cl
         self.ip = -1
         self.base_pointer = base_pointer
     
     @property
     def instructions(self):
-        return self.fn.instructions
-
+        return self.cl.fn.instructions
