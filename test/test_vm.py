@@ -498,6 +498,28 @@ class TestCompiler(unittest.TestCase):
 
         self.run_vm_tests(tests)
     
+    def test_recursive_fibonacci(self):
+        tests = [
+            VmTestCase(
+                input_string='''
+                    let fibonacci = fn(x) {
+                        if (x == 0) {
+                            return 0;
+                        } else {
+                            if (x == 1) {
+                                return 1;
+                            } else {
+                                fibonacci(x - 1) + fibonacci(x - 2);
+                            }
+                        }
+                    };
+
+                    fibonacci(15);
+                    ''',
+                    expected=610),
+        ]
+
+        self.run_vm_tests(tests)
 
 if __name__ == '__main__':
     unittest.main()
