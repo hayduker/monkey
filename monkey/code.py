@@ -5,34 +5,36 @@ from enum import Enum
 
 
 class Opcode(Enum):
-    OpConstant      = b'\x01'
-    OpPop           = b'\x02'
-    OpAdd           = b'\x03'
-    OpSub           = b'\x04'
-    OpMul           = b'\x05'
-    OpDiv           = b'\x06'
-    OpTrue          = b'\x07'
-    OpFalse         = b'\x08'
-    OpEqual         = b'\x09'
-    OpNotEqual      = b'\x0A'
-    OpGreaterThan   = b'\x0B'
-    OpMinus         = b'\x0C'
-    OpBang          = b'\x0D'
-    OpJumpNotTruthy = b'\x0E'
-    OpJump          = b'\x0F'
-    OpNull          = b'\x10'
-    OpSetGlobal     = b'\x11'
-    OpGetGlobal     = b'\x12'
-    OpArray         = b'\x13'
-    OpHash          = b'\x14'
-    OpIndex         = b'\x15'
-    OpCall          = b'\x16'
-    OpReturnValue   = b'\x17'
-    OpReturn        = b'\x18'
-    OpSetLocal      = b'\x19'
-    OpGetLocal      = b'\x1A'
-    OpGetBuiltin    = b'\x1B'
-    OpClosure       = b'\x1C'
+    OpConstant       = b'\x01'
+    OpPop            = b'\x02'
+    OpAdd            = b'\x03'
+    OpSub            = b'\x04'
+    OpMul            = b'\x05'
+    OpDiv            = b'\x06'
+    OpTrue           = b'\x07'
+    OpFalse          = b'\x08'
+    OpEqual          = b'\x09'
+    OpNotEqual       = b'\x0A'
+    OpGreaterThan    = b'\x0B'
+    OpMinus          = b'\x0C'
+    OpBang           = b'\x0D'
+    OpJumpNotTruthy  = b'\x0E'
+    OpJump           = b'\x0F'
+    OpNull           = b'\x10'
+    OpSetGlobal      = b'\x11'
+    OpGetGlobal      = b'\x12'
+    OpArray          = b'\x13'
+    OpHash           = b'\x14'
+    OpIndex          = b'\x15'
+    OpCall           = b'\x16'
+    OpReturnValue    = b'\x17'
+    OpReturn         = b'\x18'
+    OpSetLocal       = b'\x19'
+    OpGetLocal       = b'\x1A'
+    OpGetBuiltin     = b'\x1B'
+    OpGetFree        = b'\x1C'
+    OpClosure        = b'\x1D'
+    OpCurrentClosure = b'\x1E'
 
 
 @dataclass
@@ -42,34 +44,36 @@ class Definition:
 
 
 definitions = {
-    Opcode.OpConstant:      Definition(name='OpConstant',      operand_widths=[2]),
-    Opcode.OpAdd:           Definition(name='OpAdd',           operand_widths=[]),
-    Opcode.OpPop:           Definition(name='OpPop',           operand_widths=[]),
-    Opcode.OpSub:           Definition(name='OpSub',           operand_widths=[]),
-    Opcode.OpMul:           Definition(name='OpMul',           operand_widths=[]),
-    Opcode.OpDiv:           Definition(name='OpDiv',           operand_widths=[]),
-    Opcode.OpTrue:          Definition(name='OpTrue',          operand_widths=[]),
-    Opcode.OpFalse:         Definition(name='OpFalse',         operand_widths=[]),
-    Opcode.OpEqual:         Definition(name='OpEqual',         operand_widths=[]),
-    Opcode.OpNotEqual:      Definition(name='OpNotEqual',      operand_widths=[]),
-    Opcode.OpGreaterThan:   Definition(name='OpGreaterThan',   operand_widths=[]),
-    Opcode.OpMinus:         Definition(name='OpMinus',         operand_widths=[]),
-    Opcode.OpBang:          Definition(name='OpBang',          operand_widths=[]),
-    Opcode.OpJumpNotTruthy: Definition(name='OpJumpNotTruthy', operand_widths=[2]),
-    Opcode.OpJump:          Definition(name='OpJump',          operand_widths=[2]),
-    Opcode.OpNull:          Definition(name='OpNull',          operand_widths=[]),
-    Opcode.OpSetGlobal:     Definition(name='OpSetGlobal',     operand_widths=[2]),
-    Opcode.OpGetGlobal:     Definition(name='OpGetGlobal',     operand_widths=[2]),
-    Opcode.OpArray:         Definition(name='OpArray',         operand_widths=[2]),
-    Opcode.OpHash:          Definition(name='OpHash',          operand_widths=[2]),
-    Opcode.OpIndex:         Definition(name='OpIndex',         operand_widths=[]),
-    Opcode.OpCall:          Definition(name='OpCall',          operand_widths=[1]),
-    Opcode.OpReturnValue:   Definition(name='OpReturnValue',   operand_widths=[]),
-    Opcode.OpReturn:        Definition(name='OpReturn',        operand_widths=[]),
-    Opcode.OpSetLocal:      Definition(name='OpSetLocal',      operand_widths=[1]),
-    Opcode.OpGetLocal:      Definition(name='OpGetLocal',      operand_widths=[1]),
-    Opcode.OpGetBuiltin:    Definition(name='OpGetBuiltin',    operand_widths=[1]),
-    Opcode.OpClosure:       Definition(name='OpClosure',       operand_widths=[2, 1]),
+    Opcode.OpConstant:       Definition(name='OpConstant',       operand_widths=[2]),
+    Opcode.OpAdd:            Definition(name='OpAdd',            operand_widths=[]),
+    Opcode.OpPop:            Definition(name='OpPop',            operand_widths=[]),
+    Opcode.OpSub:            Definition(name='OpSub',            operand_widths=[]),
+    Opcode.OpMul:            Definition(name='OpMul',            operand_widths=[]),
+    Opcode.OpDiv:            Definition(name='OpDiv',            operand_widths=[]),
+    Opcode.OpTrue:           Definition(name='OpTrue',           operand_widths=[]),
+    Opcode.OpFalse:          Definition(name='OpFalse',          operand_widths=[]),
+    Opcode.OpEqual:          Definition(name='OpEqual',          operand_widths=[]),
+    Opcode.OpNotEqual:       Definition(name='OpNotEqual',       operand_widths=[]),
+    Opcode.OpGreaterThan:    Definition(name='OpGreaterThan',    operand_widths=[]),
+    Opcode.OpMinus:          Definition(name='OpMinus',          operand_widths=[]),
+    Opcode.OpBang:           Definition(name='OpBang',           operand_widths=[]),
+    Opcode.OpJumpNotTruthy:  Definition(name='OpJumpNotTruthy',  operand_widths=[2]),
+    Opcode.OpJump:           Definition(name='OpJump',           operand_widths=[2]),
+    Opcode.OpNull:           Definition(name='OpNull',           operand_widths=[]),
+    Opcode.OpSetGlobal:      Definition(name='OpSetGlobal',      operand_widths=[2]),
+    Opcode.OpGetGlobal:      Definition(name='OpGetGlobal',      operand_widths=[2]),
+    Opcode.OpArray:          Definition(name='OpArray',          operand_widths=[2]),
+    Opcode.OpHash:           Definition(name='OpHash',           operand_widths=[2]),
+    Opcode.OpIndex:          Definition(name='OpIndex',          operand_widths=[]),
+    Opcode.OpCall:           Definition(name='OpCall',           operand_widths=[1]),
+    Opcode.OpReturnValue:    Definition(name='OpReturnValue',    operand_widths=[]),
+    Opcode.OpReturn:         Definition(name='OpReturn',         operand_widths=[]),
+    Opcode.OpSetLocal:       Definition(name='OpSetLocal',       operand_widths=[1]),
+    Opcode.OpGetLocal:       Definition(name='OpGetLocal',       operand_widths=[1]),
+    Opcode.OpGetBuiltin:     Definition(name='OpGetBuiltin',     operand_widths=[1]),
+    Opcode.OpGetFree:        Definition(name='OpGetFree',        operand_widths=[1]),
+    Opcode.OpClosure:        Definition(name='OpClosure',        operand_widths=[2, 1]),
+    Opcode.OpCurrentClosure: Definition(name='OpCurrentClosure', operand_widths=[]),
 }
 
 

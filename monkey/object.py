@@ -115,7 +115,7 @@ class CompiledFunction(Object):
 
 
 @dataclass
-class Closure(Object):
+class ClosureObject(Object):
     fn: CompiledFunction
     free: List[Object] = field(default_factory=list) 
 

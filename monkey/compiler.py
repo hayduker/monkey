@@ -2,7 +2,7 @@ from monkey import myast as ast
 from monkey import code
 from monkey import builtins
 from monkey.object import *
-from monkey.symbol_table import Symbol, SymbolTable, GlobalScope, LocalScope, BuiltinScope
+from monkey.symbol_table import Symbol, SymbolTable, GlobalScope, LocalScope, BuiltinScope, FreeScope, FunctionScope
 
 from dataclasses import dataclass
 
@@ -176,10 +176,12 @@ class Compiler:
                     return err
 
         elif type(node) is ast.LetStatement:
+            # Define the name before compiling the right-hand side; this
+            # allows function definitions to reference themselves recursively
+            symbol = self.symbol_table.define(node.name.value)
             if (err := self.compile(node.value)) is not None:
                 return err
             
-            symbol = self.symbol_table.define(node.name.value)
             if symbol.scope == GlobalScope:
                 self.emit(code.Opcode.OpSetGlobal, symbol.index)
             else:
@@ -225,6 +227,13 @@ class Compiler:
         elif type(node) is ast.FunctionLiteral:
             self.enter_scope()
 
+            if node.name != '':
+                # Each scope can have at most one function name defined, the name
+                # of the function we're currently in. This is used to emit
+                # OpCurrentClosure when a function references itself. This is done
+                # via load_symbol.
+                self.symbol_table.define_function_name(node.name)
+
             for param in node.parameters:
                 self.symbol_table.define(param.value)
 
@@ -237,12 +246,16 @@ class Compiler:
             if not self.last_instruction_is(code.Opcode.OpReturnValue):
                 self.emit(code.Opcode.OpReturn)
 
+            free_symbols = self.symbol_table.free_symbols
             num_locals = self.symbol_table.num_definitions
             instructions = self.leave_scope()
 
+            for sym in free_symbols:
+                self.load_symbol(sym)
+
             compiled_fn = CompiledFunction(instructions, num_locals, len(node.parameters))
             fn_index = self.add_constant(compiled_fn)
-            self.emit(code.Opcode.OpClosure, fn_index, 0) # TODO: Will replace 0 with num free variables
+            self.emit(code.Opcode.OpClosure, fn_index, len(free_symbols))
 
         elif type(node) is ast.ReturnStatement:
             if (err := self.compile(node.return_value)) is not None:
@@ -267,6 +280,10 @@ class Compiler:
             self.emit(code.Opcode.OpGetLocal, sym.index)
         elif sym.scope == BuiltinScope:
             self.emit(code.Opcode.OpGetBuiltin, sym.index)
+        elif sym.scope == FreeScope:
+            self.emit(code.Opcode.OpGetFree, sym.index)
+        elif sym.scope == FunctionScope:
+            self.emit(code.Opcode.OpCurrentClosure)
 
     def find_or_add_binding(self, name: str) -> int:
         if name in self.bindings:

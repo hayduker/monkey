@@ -120,10 +120,14 @@ class FunctionLiteral(Expression):
     token: Token
     parameters: List[Identifier] = field(default_factory=list)
     body: BlockStatement = None
+    name: str = None
 
     def __repr__(self) -> str:
         params_string = ', '.join([str(p) for p in self.parameters])
-        return f'{self.token.literal}({params_string}) {self.body}'
+        string = f'{self.token.literal}'
+        if self.name != '':
+            string + f'[{self.name}]'
+        string += f'({params_string}) {self.body}'
 
 
 @dataclass

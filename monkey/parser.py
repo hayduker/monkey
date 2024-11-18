@@ -129,6 +129,9 @@ class Parser:
 
         self.next_token()
         stmt.value = self.parse_expression(Precedence.LOWEST)
+
+        if type(stmt.value) is ast.FunctionLiteral:
+            stmt.value.name = stmt.name.value
         
         if self.peek_token_is(TokenType.SEMICOLON):
             self.next_token()

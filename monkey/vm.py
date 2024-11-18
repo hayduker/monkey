@@ -29,7 +29,7 @@ class VirtualMachine:
 
         self.frames = [None] * MAX_FRAMES
         main_fn = CompiledFunction(instructions=bytecode.instructions)
-        main_closure = Closure(fn=main_fn)
+        main_closure = ClosureObject(fn=main_fn)
         main_frame = Frame(cl=main_closure, base_pointer=0)
         self.frames[0] = main_frame
         self.frames_index = 1
@@ -199,12 +199,30 @@ class VirtualMachine:
                 if err is not None:
                     return err
             
+            elif op == Opcode.OpGetFree:
+                free_index = code.read_uint8(ins[ip+1:ip+2])
+                self.current_frame.ip += 1
+
+                current_closure = self.current_frame.cl
+                err = self.push(current_closure.free[free_index])
+                if err is not None:
+                    return err  
+            
             elif op == Opcode.OpClosure:
                 const_index = code.read_uint16(ins[ip+1:ip+3])
-                _ = code.read_uint8([ins[ip+3]]) # TODO: Use this value when implementing free variables
+                num_free = code.read_uint8([ins[ip+3]])
                 self.current_frame.ip += 3
 
-                err = self.push_closure(const_index)
+                err = self.push_closure(const_index, num_free)
+                if err is not None:
+                    return err
+            
+            # If we get this from the compiler, it means the current function has called
+            # itself. We put the function back on the stack, then any arguments will be
+            # put on the stack, then OpCall will be executed.
+            elif op == Opcode.OpCurrentClosure:
+                current_closure = self.current_frame.cl
+                err = self.push(current_closure)
                 if err is not None:
                     return err
 
@@ -220,12 +238,16 @@ class VirtualMachine:
         self.frames_index -= 1
         return self.frames[self.frames_index]
 
-    def push_closure(self, const_index: int) -> VmError | None:
+    def push_closure(self, const_index: int, num_free: int) -> VmError | None:
         function = self.constants[const_index]
         if type(function) is not CompiledFunction:
             return VmError(f'not a function: {function}')
+        
+        free = [self.stack[self.sp-num_free+i] for i in range(num_free)]
+        # free = self.stack[self.sp-num_free:self.sp-1]
+        self.sp -= num_free
 
-        closure = Closure(fn=function)
+        closure = ClosureObject(fn=function, free=free)
         return self.push(closure)
 
     def execute_index_expression(self, left: Object, index: Object) -> VmError | None:
@@ -340,14 +362,14 @@ class VirtualMachine:
     
     def execute_call(self, num_args: int) -> VmError | None:
         callee = self.stack[self.sp-1-num_args] # Closure/builtin is below all the args on the stack
-        if type(callee) == Closure:
+        if type(callee) == ClosureObject:
             return self.call_closure(callee, num_args)
         elif type(callee) == BuiltinObject:
             return self.call_builtin(callee, num_args)
         else:
             return VmError('calling non-closure and non-builtin')
 
-    def call_closure(self, cl: Closure, num_args: int) -> VmError | None:      
+    def call_closure(self, cl: ClosureObject, num_args: int) -> VmError | None:      
         if num_args != cl.fn.num_parameters:
             return VmError(f'wrong number of arguments: want={cl.fn.num_parameters}, got={num_args}')
         

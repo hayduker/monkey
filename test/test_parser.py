@@ -302,6 +302,24 @@ class ParserTestCase(unittest.TestCase):
         body_stmt = function.body.statements[0]
         self.assertTrue(type(body_stmt), ast.ExpressionStatement)
         self.check_infix_expression(body_stmt.expression, 'x', '+', 'y')
+    
+    def test_function_literal_with_name(self):
+        input_string = 'let myFunction = fn() { };'
+
+        lexer = Lexer(input_string)
+        parser = Parser(lexer)
+        program = parser.parse_program()
+
+        self.check_parse_errors(parser)
+        self.assertIsNotNone(program)
+        self.assertEqual(len(program.statements), 1)
+
+        stmt = program.statements[0]
+        self.assertTrue(type(stmt), ast.LetStatement)
+
+        function = stmt.value
+        self.assertTrue(type(function), ast.FunctionLiteral)
+        self.assertEqual(function.name, 'myFunction')
 
     def test_function_parameters_parsing(self):
         @dataclass

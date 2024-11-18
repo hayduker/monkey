@@ -650,6 +650,192 @@ class TestCompiler(unittest.TestCase):
         ]
 
         self.run_compiler_tests(tests)
+    
+    def test_closures(self):
+        tests = [
+            CompilerTestCase(input_string='''
+                                fn(a) {
+                                    fn(b) {
+                                        a + b
+                                    }
+                                }
+                             ''',
+                             expected_constants=[
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpGetFree, 0),
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpAdd),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpClosure, 0, 1),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                             ],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpClosure, 1, 0),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+            CompilerTestCase(input_string='''
+                                fn(a) {
+                                    fn(b) {
+                                        fn(c) {
+                                            a + b + c
+                                        }
+                                    }
+                                }
+                             ''',
+                             expected_constants=[
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpGetFree, 0),
+                                    code.make(code.Opcode.OpGetFree, 1),
+                                    code.make(code.Opcode.OpAdd),
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpAdd),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpGetFree, 0),
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpClosure, 0, 2),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpClosure, 1, 1),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                             ],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpClosure, 2, 0),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+            CompilerTestCase(input_string='''
+                                let global = 55;
+                             
+                                fn() {
+                                    let a = 66;
+                             
+                                    fn() {
+                                        let b = 77;
+                             
+                                        fn() {
+                                            let c = 88;
+                             
+                                            global + a + b + c;
+                                        }
+                                    }
+                                }
+                             ''',
+                             expected_constants=[
+                                55,
+                                66,
+                                77,
+                                88,
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpConstant, 3),
+                                    code.make(code.Opcode.OpSetLocal, 0),
+                                    code.make(code.Opcode.OpGetGlobal, 0),
+                                    code.make(code.Opcode.OpGetFree, 0),
+                                    code.make(code.Opcode.OpAdd),
+                                    code.make(code.Opcode.OpGetFree, 1),
+                                    code.make(code.Opcode.OpAdd),
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpAdd),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpConstant, 2),
+                                    code.make(code.Opcode.OpSetLocal, 0),
+                                    code.make(code.Opcode.OpGetFree, 0),
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpClosure, 4, 2),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                                CompiledFunction(instructions=[
+                                    code.make(code.Opcode.OpConstant, 1),
+                                    code.make(code.Opcode.OpSetLocal, 0),
+                                    code.make(code.Opcode.OpGetLocal, 0),
+                                    code.make(code.Opcode.OpClosure, 5, 1),
+                                    code.make(code.Opcode.OpReturnValue),
+                                ]),
+                             ],
+                             expected_instructions=[
+                                code.make(code.Opcode.OpConstant, 0),
+                                code.make(code.Opcode.OpSetGlobal, 0),
+                                code.make(code.Opcode.OpClosure, 6, 0),
+                                code.make(code.Opcode.OpPop),
+                             ]),
+        ]
+
+        self.run_compiler_tests(tests)
+    
+    def test_recursive_functions(self):
+        tests = [
+            CompilerTestCase(
+                input_string='''
+                    let countDown = fn(x) { countDown(x - 1); };
+                    countDown(1);
+                ''',
+                expected_constants=[
+                    1,
+                    CompiledFunction(instructions=[
+                        code.make(code.Opcode.OpCurrentClosure),
+                        code.make(code.Opcode.OpGetLocal, 0),
+                        code.make(code.Opcode.OpConstant, 0),
+                        code.make(code.Opcode.OpSub),
+                        code.make(code.Opcode.OpCall, 1),
+                        code.make(code.Opcode.OpReturnValue),
+                    ]),
+                    1,
+                ],
+                expected_instructions=[
+                    code.make(code.Opcode.OpClosure, 1, 0),
+                    code.make(code.Opcode.OpSetGlobal, 0),
+                    code.make(code.Opcode.OpGetGlobal, 0),
+                    code.make(code.Opcode.OpConstant, 2),
+                    code.make(code.Opcode.OpCall, 1),
+                    code.make(code.Opcode.OpPop),
+                ]),
+            CompilerTestCase(
+                input_string='''
+                    let wrapper = fn() {
+                        let countDown = fn(x) { countDown(x - 1); };
+                        countDown(1);
+                    };
+                    wrapper();
+                ''',
+                expected_constants=[
+                    1,
+                    CompiledFunction(instructions=[
+                        code.make(code.Opcode.OpCurrentClosure),
+                        code.make(code.Opcode.OpGetLocal, 0),
+                        code.make(code.Opcode.OpConstant, 0),
+                        code.make(code.Opcode.OpSub),
+                        code.make(code.Opcode.OpCall, 1),
+                        code.make(code.Opcode.OpReturnValue),
+                    ]),
+                    1,
+                    CompiledFunction(instructions=[
+                        code.make(code.Opcode.OpClosure, 1, 0),
+                        code.make(code.Opcode.OpSetLocal, 0),
+                        code.make(code.Opcode.OpGetLocal, 0),
+                        code.make(code.Opcode.OpConstant, 2),
+                        code.make(code.Opcode.OpCall, 1),
+                        code.make(code.Opcode.OpReturnValue),
+                    ]),
+                ],
+                expected_instructions=[
+                    code.make(code.Opcode.OpClosure, 3, 0),
+                    code.make(code.Opcode.OpSetGlobal, 0),
+                    code.make(code.Opcode.OpGetGlobal, 0),
+                    code.make(code.Opcode.OpCall, 0),
+                    code.make(code.Opcode.OpPop),
+                ]),
+        ]
+
+        self.run_compiler_tests(tests)
 
 if __name__ == '__main__':
     unittest.main()
