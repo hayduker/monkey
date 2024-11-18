@@ -3,11 +3,10 @@ import unittest
 from typing import List
 from dataclasses import dataclass
 
-from monkey import code
 from monkey.object import *
 from monkey.lexer import Lexer
 from monkey.parser import Parser
-from monkey.compiler import Compiler, Bytecode
+from monkey.compiler import Compiler
 from monkey.vm import VirtualMachine
 
 
