@@ -6,8 +6,6 @@ from monkey.symbol_table import Symbol, SymbolTable, GlobalScope, LocalScope, Bu
 
 from dataclasses import dataclass
 
-# TODO: Make current_instructions a property
-
 
 class Bytecode:
     def __init__(self, instructions, constants):
@@ -64,7 +62,7 @@ class Compiler:
 
     def leave_scope(self) -> code.Instructions:
         instructions = self.current_scope.instructions
-        self.scopes = self.scopes[:-1] # TODO: Change to "del self.scopes[-1]"?
+        self.scopes = self.scopes[:-1]
         self.scope_index -= 1
         self.symbol_table = self.symbol_table.outer
         return instructions

@@ -1,9 +1,6 @@
 from collections import namedtuple
 from monkey.object import *
 
-# TODO: I'm not sure these need to return python's None... The whole "bring your own NULL"
-# thing doesn't seem necessary at first blush... both the evaluator and VM need a NullObject,
-# so why not just use one static copy everywhere?
 
 def _monkey_len(args):
     if len(args) != 1:
